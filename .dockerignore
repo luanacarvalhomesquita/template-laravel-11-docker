@@ -1,0 +1,10 @@
+*.log
+/public/hot
+tmp/
+mysql
+vendor
+.vscode
+*.tar
+*.Dockerfile
+docker-compose.yml
+node_modules

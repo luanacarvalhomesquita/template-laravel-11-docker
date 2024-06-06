@@ -1,0 +1,77 @@
+volumes:
+  db_data:
+    driver: local
+networks:
+    template-network:
+        driver: "bridge"
+
+services:
+    laravel:
+        container_name: laravel
+        restart: unless-stopped
+        build:
+            context: ./
+            dockerfile: dev.Dockerfile
+        volumes:
+            - ./:/var/www
+        env_file:
+            - ./.env
+        ports:
+            - "9000:9000"
+        user: "1000:www-data"
+        depends_on:
+            - mysql
+        networks:
+            - template-network
+    nginx:
+        container_name: nginx
+        image: nginx:alpine
+        restart: unless-stopped
+        ports:
+            - "443:443"
+            - "81:80"
+        volumes:
+            - ./:/var/www
+            - ./nginx:/etc/nginx/conf.d
+        depends_on:
+            - laravel
+        networks:
+            - template-network
+    mysql:
+        container_name: mysql
+        image: mysql:8.0
+        restart: always
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_DATABASE: ${DB_DATABASE}
+            TZ: "Europe/Lisbon"
+        command: --max_allowed_packet=256M
+        volumes:
+            - ./mysql:/var/lib/mysql
+        networks:
+            - template-network
+    myadmin:
+        container_name: myadmin
+        image: phpmyadmin:latest
+        restart: always
+        environment:
+            - PMA_ARBITRARY=1
+        ports:
+            - "3308:80"
+        depends_on:
+            - laravel
+            - mysql
+        networks:
+            - template-network
+    redis:
+        image: redis:latest
+        ports:
+            - 6379:6379
+        container_name: template-redis
+        depends_on:
+            - laravel
+            - mysql
+        networks:
+            - template-network
